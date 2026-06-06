@@ -1,6 +1,15 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
 
+void flipSprite(sf::Sprite& sprite, bool horizontal, bool vertical) {
+    sf::Vector2f currentScale = sprite.getScale();
+    
+    float scaleX = horizontal ? -currentScale.x : currentScale.x;
+    float scaleY = vertical   ? -currentScale.y : currentScale.y;
+    
+    sprite.setScale(scaleX, scaleY);
+}
+
 int main() {
     // SFML 3: VideoMode takes a sf::Vector2u instead of two numbers
     sf::RenderWindow window(sf::VideoMode({800u, 600u}), "SFML Character Controller");
@@ -27,7 +36,7 @@ int main() {
     sf::Sprite player(texBase);
     
     // SFML 3: Spatial setters take structured sf::Vector2f brackets {}
-    player.setPosition({400.f, 300.f});
+    player.setPosition({0.f, 0.f});
     player.setScale({3.f, 3.f}); 
 
     // 3. ANIMATION TIMERS
