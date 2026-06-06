@@ -1,32 +1,23 @@
 #include <SFML/Graphics.hpp>
 #include <iostream>
+#include <optional>
 
-void flipSprite(sf::Sprite& sprite, bool horizontal, bool vertical) {
-    sf::Vector2f currentScale = sprite.getScale();
-    
-    float scaleX = horizontal ? -currentScale.x : currentScale.x;
-    float scaleY = vertical   ? -currentScale.y : currentScale.y;
-    
-    // Qiymətləri Vector2f kimi ötürürük:
-    sprite.setScale({scaleX, scaleY}); 
-}
+// Enum for clean direction tracking
+enum class LookDirection { Left, Right };
 
 int main() {
-    // SFML 3: VideoMode takes a sf::Vector2u instead of two numbers
+    // SFML 3 Vector2u configuration
     sf::RenderWindow window(sf::VideoMode({1920u, 860u}), "SFML Character Controller");
     window.setFramerateLimit(60); 
 
-    // 1. LOAD ALL TEXTURES
-    sf::Texture texBase, texWalk1, texWalk2, texSwing, texBaseLeft, texBaseRight;
+    // 1. LOAD ALL TEXTURES (Fixed logic operator to ||)
+    sf::Texture texBase, texWalk1, texWalk2, texSwing;
     
-    // (Keep these commented out or active based on your placeholder strategy)
-    if (!texBase.loadFromFile("../../pngs/base.png")  &&
-        !texWalk1.loadFromFile("../../pngs/walk1.png") && 
-        !texWalk2.loadFromFile("../../pngs/walk2.png") &&
-        !texSwing.loadFromFile("../../pngs/swing.png") &&
-        !texBaseLeft.loadFromFile("../../pngs/LeftBase.png") &&
-        !texBaseRight.loadFromFile("../../pngs/LeftBase.png")) {
-        std::cout << "Error: Could not find image files relative to gm/code/build/!" << std::endl;
+    if (!texBase.loadFromFile("../../pngs/base.png")  ||
+        !texWalk1.loadFromFile("../../pngs/walk1.png") || 
+        !texWalk2.loadFromFile("../../pngs/walk2.png") ||
+        !texSwing.loadFromFile("../../pngs/swing.png")) {
+        std::cout << "Error: Could not find one or more image files!" << std::endl;
         return -1;
     }
 
@@ -34,46 +25,47 @@ int main() {
     texWalk1.setSmooth(false);
     texWalk2.setSmooth(false);
     texSwing.setSmooth(false);
-    texBaseLeft.setSmooth(false);
-    texBaseRight.setSmooth(false);
+
     // 2. CREATE THE PLAYER SPRITE
     sf::Sprite player(texBase);
     
-    // SFML 3: Spatial setters take structured sf::Vector2f brackets {}
-    player.setPosition({0.f, 0.f});
-    player.setScale({3.f, 3.f}); 
+    // Set origin to the center so flipping doesn't teleport the sprite
+    sf::FloatRect bounds = player.getLocalBounds();
+    player.setOrigin({bounds.width / 2.0f, bounds.height / 2.0f});
+    
+    player.setPosition({400.f, 400.f});
+    
+    // Base scale vector constants
+    const float baseScale = 3.f;
+    player.setScale({baseScale, baseScale}); 
 
-    // 3. ANIMATION TIMERS
+    // 3. STATE AND TIMERS (Persistent outside loop)
     sf::Clock animationClock; 
     float speed = 4.f;        
     int walkFrame = 1;        
     bool isMoving = false;
-    bool facingLeft = false;
-    bool facingRight = false;
+    LookDirection facing = LookDirection::Right; // Track where player looks globally
+
     // MAIN RENDERING & LOGIC LOOP
     while (window.isOpen()) {
-        // SFML 3: pollEvent() returns a std::optional. We check if it holds a value.
         while (const std::optional event = window.pollEvent()) {
-            // SFML 3 event matching uses standard variant checking or method checks
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
         }
 
-        // 4. MULTI-DIRECTIONAL MOVEMENT INPUT HANDLING
+        // 4. INPUT HANDLING
         sf::Vector2f movement(0.f, 0.f);
-        isMoving = false;
-        facingRight = false;
-        facingLeft = false;
+        isMoving = false; // Reset movement check per frame
 
-        // SFML 3: Keys are strictly nested under sf::Keyboard::Key
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
             movement.x -= speed;
-            facingLeft = true;
+            facing = LookDirection::Left; // Persistent update
             isMoving = true;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
             movement.x += speed;
+            facing = LookDirection::Right; // Persistent update
             isMoving = true;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
@@ -85,18 +77,22 @@ int main() {
             isMoving = true;
         }
 
-        // Apply spatial shift to player coordinates
+        // Apply movement
         player.move(movement);
 
-        // 5. ANIMATION STATE SELECTION
-        
-        // Priority 1: Swing Attack
+        // 5. DIRECTIONAL RENDER FLIPPING (Absolute Scale Control)
+        if (facing == LookDirection::Left) {
+            player.setScale({-baseScale, baseScale}); // Flipped Horizontally
+        } else {
+            player.setScale({baseScale, baseScale});  // Normal Facing Right
+        }
+
+        // 6. ANIMATION TEXTURE SELECTION
+        // Priority 1: Attack Frame
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
             player.setTexture(texSwing);
         }
-        // Priority 2.5: Left/Right
-        if ()
-        // Priority 2: Walk Animation Cycle
+        // Priority 2: Walk Animation Cycle (Now triggers cleanly during X or Y movement)
         else if (isMoving) {
             if (animationClock.getElapsedTime().asSeconds() > 0.15f) {
                 if (walkFrame == 1) {
@@ -114,7 +110,7 @@ int main() {
             player.setTexture(texBase);
         }
 
-        // 6. RENDER QUEUE
+        // 7. RENDER QUEUE
         window.clear(sf::Color(50, 50, 50)); 
         window.draw(player);
         window.display();
