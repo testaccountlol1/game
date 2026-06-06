@@ -7,8 +7,10 @@ void flipSprite(sf::Sprite& sprite, bool horizontal, bool vertical) {
     float scaleX = horizontal ? -currentScale.x : currentScale.x;
     float scaleY = vertical   ? -currentScale.y : currentScale.y;
     
-    sprite.setScale(scaleX, scaleY);
+    // Qiymətləri Vector2f kimi ötürürük:
+    sprite.setScale({scaleX, scaleY}); 
 }
+
 
 int main() {
     // SFML 3: VideoMode takes a sf::Vector2u instead of two numbers
