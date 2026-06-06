@@ -59,17 +59,20 @@ int main() {
         // 4. MULTI-DIRECTIONAL MOVEMENT INPUT HANDLING
         sf::Vector2f movement(0.f, 0.f);
         isMoving = false; // Reset movement status flag each frame
+        bool isMovingHorizontally = false; // Track horizontal movement for animation
 
         // SFML 3: Keys are strictly nested under sf::Keyboard::Key
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
             movement.x -= speed;
             facing = LookDirection::Left;
             isMoving = true;
+            isMovingHorizontally = true;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
             movement.x += speed;
             facing = LookDirection::Right;
             isMoving = true;
+            isMovingHorizontally = true;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
             movement.y -= speed;
@@ -83,13 +86,15 @@ int main() {
         // Apply spatial shift to player coordinates
         player.move(movement);
 
-        // 5. DIRECTIONAL RENDER FLIPPING (Absolute Scale Mode)
-        if (facing == LookDirection::Left) {
-            player.setTexture(texSideBase);
-            player.setScale({-baseScale, baseScale});  // Flip horizontally for left orientation
-        } else if (facing == LookDirection::Right) {
-            player.setTexture(texSideBase); 
-            player.setScale({baseScale, baseScale});  // Normal right orientation
+        // 5. DIRECTIONAL RENDER FLIPPING (Absolute Scale Mode - Only for horizontal movement)
+        if (isMovingHorizontally) {
+            if (facing == LookDirection::Left) {
+                player.setTexture(texSideBase);
+                player.setScale({-baseScale, baseScale});  // Flip horizontally for left orientation
+            } else if (facing == LookDirection::Right) {
+                player.setTexture(texSideBase); 
+                player.setScale({baseScale, baseScale});  // Normal right orientation
+            }
         }
 
         // 6. ANIMATION STATE SELECTION
@@ -97,8 +102,8 @@ int main() {
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
             player.setTexture(texSwing);
         }
-        // Priority 2: Walk Animation Cycle (Triggers cleanly on X or Y axis motion)
-        else if (isMoving) {
+        // Priority 2: Walk Animation Cycle (Only triggers on vertical movement, not horizontal)
+        else if (isMoving && !isMovingHorizontally) {
             if (animationClock.getElapsedTime().asSeconds() > 0.15f) {
                 if (walkFrame == 1) {
                     player.setTexture(texWalk1);
@@ -110,9 +115,11 @@ int main() {
                 animationClock.restart(); 
             }
         }
-        // Priority 3: Default Standing Idle
+        // Priority 3: Default Standing Idle or Moving Horizontally
         else {
-            player.setTexture(texBase);
+            if (!isMovingHorizontally) {
+                player.setTexture(texBase);
+            }
         }
 
         // 7. RENDER QUEUE
