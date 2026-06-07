@@ -3,7 +3,7 @@
 #include <optional>
 
 // Clean state tracker for look direction
-enum class LookDirection { Left, Right };
+enum class LookDirection { Left, Right, Up, Down};
 
 int main() {
     // SFML 3: VideoMode takes a sf::Vector2u instead of two individual numbers
@@ -38,7 +38,7 @@ int main() {
     player.setPosition({400.f, 400.f});
     
     const float baseScale = 3.f;
-    player.setScale({baseScale, baseScale}); 
+    
 
     // 3. ANIMATION STATE & TIMERS (Kept persistent outside the loop)
     sf::Clock animationClock; 
@@ -49,6 +49,7 @@ int main() {
 
     // MAIN RENDERING & LOGIC LOOP
     while (window.isOpen()) {
+        player.setScale({baseScale, baseScale}); //to stop the anim thing
         // SFML 3: pollEvent() returns a std::optional.
         while (const std::optional event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
@@ -76,10 +77,12 @@ int main() {
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Up) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W)) {
             movement.y -= speed;
+            facing = LookDirection::Up;
             isMoving = true;
         }
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Down) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S)) {
             movement.y += speed;
+            facing = LookDirection::Down;
             isMoving = true;
         }
 
@@ -100,6 +103,7 @@ int main() {
         // 6. ANIMATION STATE SELECTION
         // Priority 1: Swing Attack
         if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space)) {
+            player.setScale({baseScale, baseScale});
             player.setTexture(texSwing);
         }
         // Priority 2: Walk Animation Cycle (Only triggers on vertical movement, not horizontal)
